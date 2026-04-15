@@ -1,0 +1,1 @@
+## A personal blog using Next JS 14 & backend Nest JS (not planned yet), DB as Postgres

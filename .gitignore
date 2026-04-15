@@ -1,0 +1,109 @@
+# ========================
+# Dependencies
+# ========================
+node_modules/
+.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# ========================
+# Environment variables
+# ========================
+.env
+.env.*
+!.env.example
+
+# ========================
+# Internal / local docs
+# ========================
+docs/internal/
+
+# ========================
+# Next.js (blog/)
+# ========================
+blog/.next/
+blog/out/
+blog/build/
+blog/.vercel
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/.vercel
+*.tsbuildinfo
+next-env.d.ts
+
+# ========================
+# NestJS (blog-backend/)
+# ========================
+blog-backend/dist/
+blog-backend/build/
+backend/dist/
+backend/build/
+
+# ========================
+# Uploaded files
+# ========================
+uploads/
+
+# ========================
+# Docker
+# ========================
+postgres_data/
+
+# ========================
+# Claude Code
+# ========================
+.claude/
+
+# ========================
+# Deployment backups
+# ========================
+backups/
+
+# ========================
+# Testing
+# ========================
+coverage/
+.nyc_output/
+
+# ========================
+# Logs
+# ========================
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ========================
+# OS files
+# ========================
+.DS_Store
+Thumbs.db
+
+# ========================
+# IDE / Editor
+# ========================
+.vscode/
+.idea/
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+*.swp
+*.swo
+*~
+
+# ========================
+# Misc
+# ========================
+*.pem
+*.pid
+*.seed
+*.pid.lock
+.temp
+.tmp
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
