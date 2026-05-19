@@ -34,7 +34,12 @@ services:
     ports:
       - "127.0.0.1:3001:3001"  # Only accessible from host, not publicly
     volumes:
-      - ./uploads:/app/uploads
+      # Bind-mounted from the parent directory so uploaded files survive
+      # deleting/recloning portfolio-website. Layout on disk:
+      #   ~/parathan-blog/
+      #     uploads/                 ← lives here
+      #     portfolio-website/       ← can be rm -rf'd safely
+      - ../uploads:/app/uploads
     networks:
       - blog-network
     environment:
