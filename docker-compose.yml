@@ -148,7 +148,7 @@ services:
 
   dms-frontend:
     build:
-      context: ./distribution-mgt/distribution-mgt-frontend
+      context: ../distribution-mgt/distribution-mgt-frontend
       dockerfile: Dockerfile                                                                                                                                                                            
       args:
         - VITE_API_URL=https://dms-api.parathan.com/api                                                                                                                                                 
