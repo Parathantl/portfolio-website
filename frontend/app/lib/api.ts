@@ -18,35 +18,15 @@ export const portfolioAPI = {
     return response.json();
   },
 
-  createProject: async (data: any) => {
-    const response = await fetch(`${API_BASE_URL}/portfolio/projects`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify(data),
-    });
-    return response.json();
-  },
-
   // Skills
   getSkills: async () => {
     const response = await fetch(`${API_BASE_URL}/portfolio/skills`);
     return response.json();
   },
 
-  getSkillsByCategory: async (category: string) => {
-    const response = await fetch(`${API_BASE_URL}/portfolio/skills/category/${category}`);
-    return response.json();
-  },
-
   // Experience
   getExperience: async () => {
     const response = await fetch(`${API_BASE_URL}/portfolio/experience`);
-    return response.json();
-  },
-
-  getCurrentExperience: async () => {
-    const response = await fetch(`${API_BASE_URL}/portfolio/experience/current`);
     return response.json();
   },
 
@@ -66,8 +46,18 @@ export const blogAPI = {
     return response.json();
   },
 
-  getPostBySlug: async (slug: string) => {
-    const response = await fetch(`${API_BASE_URL}/post/slug/${slug}`);
+  getPostsPaginated: async (params: {
+    page: number;
+    limit?: number;
+    q?: string;
+    masterCategory?: string;
+  }) => {
+    const search = new URLSearchParams();
+    search.set('page', String(params.page));
+    search.set('limit', String(params.limit ?? 9));
+    if (params.q) search.set('q', params.q);
+    if (params.masterCategory) search.set('masterCategory', params.masterCategory);
+    const response = await fetch(`${API_BASE_URL}/post?${search.toString()}`);
     return response.json();
   },
 
@@ -149,16 +139,6 @@ export const blogAPI = {
     return response.json();
   },
 
-  getCategoriesByMasterCategory: async (masterCategoryId: number) => {
-    const response = await fetch(`${API_BASE_URL}/category/master-category/${masterCategoryId}`);
-    return response.json();
-  },
-
-  getCategoryBySlug: async (slug: string) => {
-    const response = await fetch(`${API_BASE_URL}/category/slug/${slug}`);
-    return response.json();
-  },
-
   createCategory: async (data: any) => {
     const response = await fetch(`${API_BASE_URL}/category`, {
       method: 'POST',
@@ -209,16 +189,6 @@ export const blogAPI = {
     return response.json();
   },
 
-  getMasterCategoryById: async (id: number) => {
-    const response = await fetch(`${API_BASE_URL}/master-categories/${id}`);
-    return response.json();
-  },
-
-  getMasterCategoryBySlug: async (slug: string) => {
-    const response = await fetch(`${API_BASE_URL}/master-categories/slug/${slug}`);
-    return response.json();
-  },
-
   createMasterCategory: async (data: any) => {
     const response = await fetch(`${API_BASE_URL}/master-categories`, {
       method: 'POST',
@@ -262,6 +232,38 @@ export const blogAPI = {
       throw error;
     }
 
+    return response.json();
+  },
+};
+
+// Media API (admin only — JWT required by backend)
+export const mediaAPI = {
+  list: async (params: { folder?: string; cursor?: string; limit?: number } = {}) => {
+    const search = new URLSearchParams();
+    if (params.folder) search.set('folder', params.folder);
+    if (params.cursor) search.set('cursor', params.cursor);
+    if (params.limit) search.set('limit', String(params.limit));
+    const qs = search.toString();
+    const response = await fetch(`${API_BASE_URL}/media${qs ? `?${qs}` : ''}`, {
+      credentials: 'include',
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to list media (${response.status})`);
+    }
+    return response.json();
+  },
+
+  delete: async (publicId: string) => {
+    const response = await fetch(
+      `${API_BASE_URL}/media/${encodeURIComponent(publicId)}`,
+      {
+        method: 'DELETE',
+        credentials: 'include',
+      },
+    );
+    if (!response.ok) {
+      throw new Error(`Failed to delete media (${response.status})`);
+    }
     return response.json();
   },
 };

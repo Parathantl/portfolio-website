@@ -103,6 +103,62 @@ services:
       retries: 3
       start_period: 40s
 
+# DMS Implementation
+  dms-postgres:                                                                                                                                                                                         
+      image: postgres:17-alpine                                                                                                                                                                           
+      container_name: dms-postgres
+      restart: unless-stopped                                                                                                                                                                             
+      networks: [blog-network]                              
+      environment:                                                                                                                                                                                        
+        - POSTGRES_USER=${DMS_POSTGRES_USER}
+        - POSTGRES_PASSWORD=${DMS_POSTGRES_PASSWORD}                                                                                                                                                      
+        - POSTGRES_DB=${DMS_POSTGRES_DB}                    
+      volumes:                                                                                                                                                                                            
+        - dms_postgres_data:/var/lib/postgresql/data        
+      healthcheck:                                                                                                                                                                                        
+        test: ["CMD-SHELL", "pg_isready -U ${DMS_POSTGRES_USER} -d ${DMS_POSTGRES_DB}"]
+        interval: 10s                                                                                                                                                                                     
+        timeout: 5s
+        retries: 5
+      ports:                                                                                                                                                                                              
+        - "127.0.0.1:5433:5432"                                                                                                                                                                                 
+                                                                                                                                                                                                            
+  dms-backend:
+    build:                                                                                                                                                                                              
+      context: ./distribution-mgt-backend                 
+      dockerfile: Dockerfile
+    container_name: dms-backend
+    restart: unless-stopped                                                                                                                                                                             
+    ports:
+      - "127.0.0.1:3002:3000"                                                                                                                                                                           
+    networks: [blog-network]                              
+    environment:                                                                                                                                                                                        
+      - NODE_ENV=production
+      - PORT=3000                                                                                                                                                                                       
+      - DB_HOST=dms-postgres                              
+      - DB_PORT=5432
+      - DB_USER=${DMS_POSTGRES_USER}                                                                                                                                                                    
+      - DB_PASSWORD=${DMS_POSTGRES_PASSWORD}
+      - DB_NAME=${DMS_POSTGRES_DB}                                                                                                                                                                      
+      - DB_SSL=false                                      
+      - JWT_SECRET=${DMS_JWT_SECRET}                                                                                                                                                                    
+    depends_on:                                                                                                                                                                                         
+      dms-postgres:
+        condition: service_healthy                                                                                                                                                                      
+
+  dms-frontend:
+    build:
+      context: ./distribution-mgt-frontend
+      dockerfile: Dockerfile                                                                                                                                                                            
+      args:
+        - VITE_API_URL=https://dms-api.parathan.com/api                                                                                                                                                 
+    container_name: dms-frontend                                                                                                                                                                        
+    restart: unless-stopped
+    ports:                                                                                                                                                                                              
+      - "127.0.0.1:3011:80"                               
+    networks: [blog-network]                                                                                                                                                                            
+    depends_on: [dms-backend]                                
+                          
 networks:
   blog-network:
     driver: bridge
@@ -110,3 +166,5 @@ networks:
 volumes:
   postgres_data:
     driver: local
+  dms_postgres_data:
+      driver: local

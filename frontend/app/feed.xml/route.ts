@@ -20,8 +20,10 @@ function escapeXml(str: string): string {
     .replace(/'/g, '&apos;');
 }
 
-function stripHTML(html: string): string {
-  return html.replace(/<[^>]*>/g, '').trim();
+import { stripMarkdown } from '@/app/lib/strip-markdown';
+
+function stripHTML(content: string): string {
+  return stripMarkdown(content);
 }
 
 export async function GET() {

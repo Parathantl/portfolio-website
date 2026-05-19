@@ -1,4 +1,5 @@
-import { Post, Category } from '@/app/types/blog';
+import { Post } from '@/app/types/blog';
+import { stripMarkdown } from './strip-markdown';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://parathan.com';
 const PERSON_ID = `${SITE_URL}/#person`;
@@ -100,7 +101,7 @@ export function getBlogPostingSchema(
     articleBody?: string;
   }
 ) {
-  const textContent = post.content?.replace(/<[^>]*>/g, '') || '';
+  const textContent = stripMarkdown(post.content || '');
   const description =
     post.excerpt || textContent.substring(0, 160) + '...';
   const authorName = post.user

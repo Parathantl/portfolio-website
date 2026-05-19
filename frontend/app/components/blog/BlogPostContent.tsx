@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Post } from '@/app/types/blog';
+import { stripMarkdown } from '@/app/lib/strip-markdown';
 import SocialShare from '@/app/components/blog/SocialShare';
 import RelatedPosts from '@/app/components/blog/RelatedPosts';
 import ReadingProgress from '@/app/components/blog/ReadingProgress';
@@ -35,9 +36,9 @@ export default function BlogPostContent({ slug, post, sanitizedContent, authorIn
   };
 
   const calculateReadTime = (content: string) => {
-    const text = content.replace(/<[^>]*>/g, '');
-    const wordCount = text.split(/\s+/).length;
-    const minutes = Math.ceil(wordCount / 200);
+    const text = stripMarkdown(content);
+    const wordCount = text.split(/\s+/).filter(Boolean).length;
+    const minutes = Math.max(1, Math.ceil(wordCount / 200));
     return `${minutes} min read`;
   };
 
@@ -91,29 +92,40 @@ export default function BlogPostContent({ slug, post, sanitizedContent, authorIn
               </p>
             )}
 
-            <div className="flex flex-wrap items-center gap-3 md:gap-6 text-sm md:text-base text-gray-600 dark:text-gray-400 mb-6 md:mb-8">
-              <div className="flex items-center gap-2">
-                {post.user?.profilePic ? (
-                  <img
-                    src={post.user.profilePic}
-                    alt={`${post.user.firstname} ${post.user.lastname}`}
-                    className="w-8 h-8 md:w-10 md:h-10 rounded-full"
-                  />
-                ) : (
-                  <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold text-sm">
-                    {post.user?.firstname?.charAt(0) || 'A'}
+            {(() => {
+              const authorImage =
+                authorInfo?.profileImageUrl || post.user?.profilePic;
+              const authorName =
+                authorInfo?.name ||
+                [post.user?.firstname, post.user?.lastname]
+                  .filter(Boolean)
+                  .join(' ') ||
+                'Author';
+              const authorInitial = authorName.charAt(0).toUpperCase();
+              return (
+                <div className="flex flex-wrap items-center gap-3 md:gap-6 text-sm md:text-base text-gray-600 dark:text-gray-400 mb-6 md:mb-8">
+                  <div className="flex items-center gap-2">
+                    {authorImage ? (
+                      <img
+                        src={authorImage}
+                        alt={authorName}
+                        className="w-8 h-8 md:w-10 md:h-10 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold text-sm">
+                        {authorInitial}
+                      </div>
+                    )}
+                    <span className="font-medium">{authorName}</span>
                   </div>
-                )}
-                <span className="font-medium">
-                  {post.user?.firstname} {post.user?.lastname}
-                </span>
-              </div>
 
-              <span className="hidden sm:inline">•</span>
-              <span className="text-xs md:text-sm">{formatDate(post.createdAt || post.createdOn || '')}</span>
-              <span className="hidden sm:inline">•</span>
-              <span className="text-xs md:text-sm">{calculateReadTime(post.content)}</span>
-            </div>
+                  <span className="hidden sm:inline">•</span>
+                  <span className="text-xs md:text-sm">{formatDate(post.createdAt || post.createdOn || '')}</span>
+                  <span className="hidden sm:inline">•</span>
+                  <span className="text-xs md:text-sm">{calculateReadTime(post.content)}</span>
+                </div>
+              );
+            })()}
           </header>
         </div>
 
@@ -139,7 +151,7 @@ export default function BlogPostContent({ slug, post, sanitizedContent, authorIn
           {/* Article Content - SSR rendered, visible to crawlers */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 md:p-10 lg:p-16 xl:p-20">
             <div
-              className="ql-editor prose dark:prose-invert max-w-none prose-base md:prose-lg lg:prose-xl xl:prose-2xl
+              className="prose dark:prose-invert max-w-none prose-base md:prose-lg lg:prose-xl xl:prose-2xl
                 prose-headings:text-gray-900 dark:prose-headings:text-white
                 prose-p:text-gray-700 dark:prose-p:text-gray-300 prose-p:text-base md:prose-p:text-lg lg:prose-p:text-xl
                 prose-a:text-blue-600 dark:prose-a:text-blue-400 prose-a:underline hover:prose-a:text-blue-700

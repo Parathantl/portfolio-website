@@ -8,6 +8,27 @@ export interface UploadResult {
   format: string;
 }
 
+export interface MediaItem {
+  publicId: string;
+  url: string;
+  filename?: string;
+  size?: number;
+  format?: string;
+  folder?: string;
+  createdAt?: string;
+}
+
+export interface ListResult {
+  items: MediaItem[];
+  nextCursor?: string;
+}
+
+export interface ListOptions {
+  folder?: string;
+  cursor?: string;
+  limit?: number;
+}
+
 export interface IStorageProvider {
   /**
    * Upload a file to the storage provider
@@ -30,4 +51,9 @@ export interface IStorageProvider {
    * @returns The public URL
    */
   getFileUrl(publicId: string): string;
+
+  /**
+   * List files, optionally filtered by folder. Supports cursor-based pagination.
+   */
+  listFiles(opts?: ListOptions): Promise<ListResult>;
 }

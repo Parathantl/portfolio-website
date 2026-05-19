@@ -2,7 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { v2 as cloudinary, UploadApiResponse } from 'cloudinary';
 import { Express } from 'express';
-import { IStorageProvider, UploadResult } from '../storage.interface';
+import {
+  IStorageProvider,
+  ListOptions,
+  ListResult,
+  UploadResult,
+} from '../storage.interface';
 import * as streamifier from 'streamifier';
 
 @Injectable()
@@ -63,5 +68,30 @@ export class CloudinaryProvider implements IStorageProvider {
       quality: 'auto',
       fetch_format: 'auto', // Automatically deliver best format (WebP, AVIF)
     });
+  }
+
+  async listFiles(opts: ListOptions = {}): Promise<ListResult> {
+    const max = Math.min(100, Math.max(1, opts.limit ?? 30));
+    const params: Record<string, unknown> = {
+      type: 'upload',
+      resource_type: 'image',
+      max_results: max,
+    };
+    if (opts.folder) params.prefix = opts.folder;
+    if (opts.cursor) params.next_cursor = opts.cursor;
+
+    const result = await cloudinary.api.resources(params);
+
+    const items = (result.resources ?? []).map((r: any) => ({
+      publicId: r.public_id,
+      url: r.secure_url,
+      filename: r.public_id.split('/').pop(),
+      size: r.bytes,
+      format: r.format,
+      folder: r.folder ?? r.asset_folder,
+      createdAt: r.created_at,
+    }));
+
+    return { items, nextCursor: result.next_cursor };
   }
 }

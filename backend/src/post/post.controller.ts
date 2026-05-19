@@ -53,6 +53,12 @@ export class PostController {
     return this.postService.findAll(query);
   }
 
+  @Get('recent')
+  findRecent(@Query('limit') limit?: string) {
+    const limitNum = limit ? parseInt(limit, 10) : 3;
+    return this.postService.findRecent(limitNum);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.postService.findOne(+id);

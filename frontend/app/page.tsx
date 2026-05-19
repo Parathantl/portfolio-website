@@ -74,8 +74,10 @@ async function getSkills(): Promise<Skill[]> {
 
 async function getRecentPosts(): Promise<Post[]> {
   try {
-    const posts = await serverFetch<Post[]>('/post', { revalidate: 3600 });
-    return Array.isArray(posts) ? posts.slice(0, 3) : [];
+    const posts = await serverFetch<Post[]>('/post/recent?limit=3', {
+      revalidate: 3600,
+    });
+    return Array.isArray(posts) ? posts : [];
   } catch {
     return [];
   }
@@ -125,8 +127,31 @@ export default async function Home() {
         </div>
       </section>
 
+      {/* Recent Blog Posts Section */}
+      <section aria-label="Recent Blog Posts" className="py-16 bg-gray-100 dark:bg-gray-900">
+        <div className="container mx-auto px-6">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+              Recent Posts
+            </h2>
+            <p className="text-lg text-gray-600 dark:text-gray-400">
+              Latest articles and insights
+            </p>
+          </div>
+          <BlogList limit={3} initialPosts={posts} showFilters={false} />
+          <div className="text-center mt-8">
+            <Link
+              href="/blog"
+              className="inline-block px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors"
+            >
+              View All Posts →
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* Skills Section */}
-      <section aria-label="Skills and Technologies" className="py-16 bg-gray-100 dark:bg-gray-900">
+      <section aria-label="Skills and Technologies" className="py-16 bg-white dark:bg-gray-800">
         <div className="container mx-auto px-6">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
@@ -145,21 +170,6 @@ export default async function Home() {
               View All Skills →
             </Link>
           </div>
-        </div>
-      </section>
-
-      {/* Recent Blog Posts Section */}
-      <section aria-label="Recent Blog Posts" className="py-16 bg-white dark:bg-gray-800">
-        <div className="container mx-auto px-6">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-              Recent Posts
-            </h2>
-            <p className="text-lg text-gray-600 dark:text-gray-400">
-              Latest articles and insights
-            </p>
-          </div>
-          <BlogList limit={3} initialPosts={posts} />
         </div>
       </section>
 

@@ -16,6 +16,7 @@ export default function MasterCategoriesPage() {
     description: '',
     isActive: true,
     displayOrder: 1,
+    showInRecentPosts: false,
   });
 
   useEffect(() => {
@@ -67,8 +68,38 @@ export default function MasterCategoriesPage() {
       description: category.description || '',
       isActive: category.isActive,
       displayOrder: category.displayOrder,
+      showInRecentPosts: !!category.showInRecentPosts,
     });
     setShowModal(true);
+  };
+
+  const handleToggleRecent = async (category: MasterCategory) => {
+    const next = !category.showInRecentPosts;
+    // Optimistic update
+    setMasterCategories((prev) =>
+      prev.map((c) =>
+        c.id === category.id ? { ...c, showInRecentPosts: next } : c,
+      ),
+    );
+    try {
+      await blogAPI.updateMasterCategory(category.id, {
+        showInRecentPosts: next,
+      });
+      toast.success(
+        next
+          ? `Posts from "${category.name}" will appear in Recent Posts`
+          : `"${category.name}" removed from Recent Posts`,
+      );
+    } catch (error) {
+      console.error('Error updating master category:', error);
+      toast.error('Failed to update master category');
+      // Revert
+      setMasterCategories((prev) =>
+        prev.map((c) =>
+          c.id === category.id ? { ...c, showInRecentPosts: !next } : c,
+        ),
+      );
+    }
   };
 
   const handleDelete = async (id: number) => {
@@ -92,6 +123,7 @@ export default function MasterCategoriesPage() {
       description: '',
       isActive: true,
       displayOrder: 1,
+      showInRecentPosts: false,
     });
     setEditingCategory(null);
   };
@@ -177,6 +209,18 @@ export default function MasterCategoriesPage() {
             <div className="text-sm text-gray-500 dark:text-gray-400 mb-4">
               Display Order: {category.displayOrder}
             </div>
+
+            <label className="flex items-center gap-2 mb-4 px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={!!category.showInRecentPosts}
+                onChange={() => handleToggleRecent(category)}
+                className="h-4 w-4"
+              />
+              <span className="text-sm text-gray-700 dark:text-gray-200">
+                Show in homepage Recent Posts
+              </span>
+            </label>
 
             <div className="flex justify-end gap-2">
               <button
@@ -291,6 +335,20 @@ export default function MasterCategoriesPage() {
                   />
                   <label htmlFor="isActive" className="ml-2 text-sm text-gray-700 dark:text-gray-300">
                     Active
+                  </label>
+                </div>
+
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    name="showInRecentPosts"
+                    id="showInRecentPosts"
+                    checked={formData.showInRecentPosts}
+                    onChange={handleInputChange}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <label htmlFor="showInRecentPosts" className="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                    Show posts in homepage Recent Posts
                   </label>
                 </div>
               </div>

@@ -1,6 +1,6 @@
 import Link from 'next/link';
-import DOMPurify from 'dompurify';
 import { Post } from '@/app/types/blog';
+import { stripMarkdown } from '@/app/lib/strip-markdown';
 
 interface BlogCardProps {
   post: Post & {
@@ -11,9 +11,9 @@ interface BlogCardProps {
 export default function BlogCard({ post }: BlogCardProps) {
   // Calculate read time (assuming 200 words per minute)
   const calculateReadTime = (content: string) => {
-    const text = content.replace(/<[^>]*>/g, ''); // Remove HTML tags
-    const wordCount = text.split(/\s+/).length;
-    const minutes = Math.ceil(wordCount / 200);
+    const text = stripMarkdown(content);
+    const wordCount = text.split(/\s+/).filter(Boolean).length;
+    const minutes = Math.max(1, Math.ceil(wordCount / 200));
     return `${minutes} min read`;
   };
 
@@ -28,8 +28,8 @@ export default function BlogCard({ post }: BlogCardProps) {
   };
 
   // Get excerpt (first 150 characters)
-  const getExcerpt = (html: string) => {
-    const text = html.replace(/<[^>]*>/g, '');
+  const getExcerpt = (content: string) => {
+    const text = stripMarkdown(content);
     return text.length > 150 ? text.substring(0, 150) + '...' : text;
   };
 

@@ -1,7 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Express } from 'express';
-import { IStorageProvider, UploadResult } from '../storage.interface';
+import {
+  IStorageProvider,
+  ListOptions,
+  ListResult,
+  UploadResult,
+} from '../storage.interface';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as sharp from 'sharp';
@@ -144,5 +149,68 @@ export class LocalStorageProvider implements IStorageProvider {
       'http://localhost:3001',
     );
     return `${appUrl}/uploads/${publicId}`;
+  }
+
+  async listFiles(opts: ListOptions = {}): Promise<ListResult> {
+    const limit = Math.min(100, Math.max(1, opts.limit ?? 30));
+    const offset = opts.cursor ? parseInt(opts.cursor, 10) || 0 : 0;
+    const baseDir = opts.folder
+      ? path.join(this.uploadDir, opts.folder)
+      : this.uploadDir;
+
+    if (!fs.existsSync(baseDir)) {
+      return { items: [] };
+    }
+
+    // Walk the directory tree to collect all image files (recursive for the
+    // base uploads dir; flat for a specific folder).
+    const collected: Array<{
+      publicId: string;
+      filePath: string;
+      mtime: number;
+      size: number;
+    }> = [];
+
+    const walk = (dir: string, prefix: string) => {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const abs = path.join(dir, entry.name);
+        const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
+        if (entry.isDirectory()) {
+          walk(abs, rel);
+        } else if (/\.(jpg|jpeg|png|gif|webp)$/i.test(entry.name)) {
+          const stat = fs.statSync(abs);
+          collected.push({
+            publicId: opts.folder ? `${opts.folder}/${rel}` : rel,
+            filePath: abs,
+            mtime: stat.mtimeMs,
+            size: stat.size,
+          });
+        }
+      }
+    };
+    walk(baseDir, '');
+
+    collected.sort((a, b) => b.mtime - a.mtime);
+    const page = collected.slice(offset, offset + limit);
+    const nextCursor =
+      offset + limit < collected.length ? String(offset + limit) : undefined;
+
+    const appUrl = this.configService.get<string>(
+      'APP_URL',
+      'http://localhost:3001',
+    );
+
+    return {
+      items: page.map((f) => ({
+        publicId: f.publicId,
+        url: `${appUrl}/uploads/${f.publicId}`,
+        filename: path.basename(f.publicId),
+        size: f.size,
+        format: path.extname(f.publicId).slice(1).toLowerCase(),
+        folder: path.dirname(f.publicId) === '.' ? undefined : path.dirname(f.publicId),
+        createdAt: new Date(f.mtime).toISOString(),
+      })),
+      nextCursor,
+    };
   }
 }

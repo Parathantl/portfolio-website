@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import BlogList from '../components/blog/BlogList';
 import { serverFetch } from '@/app/lib/server-api';
 import { getBreadcrumbSchema, SITE_URL } from '../lib/structured-data';
-import { Post, Category } from '@/app/types/blog';
+import { PaginatedPosts, MasterCategory } from '@/app/types/blog';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 3600;
@@ -19,24 +19,34 @@ export const metadata: Metadata = {
   },
 };
 
-async function getPosts(): Promise<Post[]> {
+const PAGE_SIZE = 9;
+
+async function getInitialPosts(): Promise<PaginatedPosts> {
   try {
-    return await serverFetch<Post[]>('/post', { revalidate: 3600 });
+    return await serverFetch<PaginatedPosts>(
+      `/post?page=1&limit=${PAGE_SIZE}`,
+      { revalidate: 3600 },
+    );
   } catch {
-    return [];
+    return { items: [], page: 1, limit: PAGE_SIZE, total: 0, totalPages: 1 };
   }
 }
 
-async function getCategories(): Promise<Category[]> {
+async function getMasterCategories(): Promise<MasterCategory[]> {
   try {
-    return await serverFetch<Category[]>('/categories', { revalidate: 3600 });
+    return await serverFetch<MasterCategory[]>('/master-categories', {
+      revalidate: 3600,
+    });
   } catch {
     return [];
   }
 }
 
 export default async function BlogPage() {
-  const [posts, categories] = await Promise.all([getPosts(), getCategories()]);
+  const [initial, masterCategories] = await Promise.all([
+    getInitialPosts(),
+    getMasterCategories(),
+  ]);
 
   const breadcrumb = getBreadcrumbSchema([
     { name: 'Home', url: SITE_URL },
@@ -60,7 +70,13 @@ export default async function BlogPage() {
             </p>
           </div>
 
-          <BlogList initialPosts={posts} initialCategories={categories} />
+          <BlogList
+            initialPosts={initial.items}
+            initialTotal={initial.total}
+            initialPage={initial.page}
+            pageSize={initial.limit}
+            initialMasterCategories={masterCategories}
+          />
         </div>
       </div>
     </>

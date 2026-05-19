@@ -6,9 +6,20 @@ import BlogList from './BlogList';
 interface MasterCategoryPageProps {
   masterCategory: MasterCategory;
   initialPosts?: Post[];
+  initialTotal?: number;
+  initialPage?: number;
+  pageSize?: number;
+  masterCategories?: MasterCategory[];
 }
 
-export default function MasterCategoryPage({ masterCategory, initialPosts }: MasterCategoryPageProps) {
+export default function MasterCategoryPage({
+  masterCategory,
+  initialPosts,
+  initialTotal,
+  initialPage,
+  pageSize,
+  masterCategories,
+}: MasterCategoryPageProps) {
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 py-12">
       <div className="container mx-auto px-6">
@@ -25,7 +36,14 @@ export default function MasterCategoryPage({ masterCategory, initialPosts }: Mas
         </div>
 
         {/* Blog Posts */}
-        <BlogList masterCategorySlug={masterCategory.slug} initialPosts={initialPosts} />
+        <BlogList
+          masterCategorySlug={masterCategory.slug}
+          initialPosts={initialPosts}
+          initialTotal={initialTotal}
+          initialPage={initialPage}
+          pageSize={pageSize}
+          initialMasterCategories={masterCategories}
+        />
       </div>
     </div>
   );

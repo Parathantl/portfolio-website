@@ -31,6 +31,9 @@ export class MasterCategory {
   @Column({ default: 1 })
   displayOrder: number;
 
+  @Column({ default: false })
+  showInRecentPosts: boolean;
+
   @CreateDateColumn()
   createdAt: Date;
 

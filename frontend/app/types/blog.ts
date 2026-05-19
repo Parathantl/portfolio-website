@@ -6,6 +6,7 @@ export interface MasterCategory {
   description?: string;
   isActive: boolean;
   displayOrder: number;
+  showInRecentPosts: boolean;
   createdAt: string;
   updatedAt: string;
   categories?: Category[];
@@ -32,6 +33,15 @@ export interface User {
   lastname?: string;
   profilePic?: string;
   email?: string;
+}
+
+// Paginated response shape for /post when `page` is set
+export interface PaginatedPosts {
+  items: Post[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
 }
 
 // Post types
@@ -88,6 +98,7 @@ export interface CreateMasterCategoryDto {
   description?: string;
   isActive?: boolean;
   displayOrder?: number;
+  showInRecentPosts?: boolean;
 }
 
 export interface UpdateMasterCategoryDto {
@@ -96,4 +107,5 @@ export interface UpdateMasterCategoryDto {
   description?: string;
   isActive?: boolean;
   displayOrder?: number;
+  showInRecentPosts?: boolean;
 }

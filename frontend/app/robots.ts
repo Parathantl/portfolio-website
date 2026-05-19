@@ -5,7 +5,6 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://parathan.com';
 export default function robots(): MetadataRoute.Robots {
   const disallowPaths = [
     '/admin/',
-    '/add-post',
     '/login',
     '/forgot-password',
     '/reset-password',

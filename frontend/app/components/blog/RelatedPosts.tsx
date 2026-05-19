@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Post } from '@/app/types/blog';
 import { blogAPI } from '@/app/lib/api';
+import { stripMarkdown } from '@/app/lib/strip-markdown';
 
 interface RelatedPostsProps {
   currentSlug: string;
@@ -46,9 +47,9 @@ const RelatedPosts: React.FC<RelatedPostsProps> = ({ currentSlug }) => {
 
   // Calculate read time
   const calculateReadTime = (content: string) => {
-    const text = content?.replace(/<[^>]*>/g, '') || '';
-    const wordCount = text.split(/\s+/).length;
-    const minutes = Math.ceil(wordCount / 200);
+    const text = stripMarkdown(content || '');
+    const wordCount = text.split(/\s+/).filter(Boolean).length;
+    const minutes = Math.max(1, Math.ceil(wordCount / 200));
     return `${minutes} min read`;
   };
 

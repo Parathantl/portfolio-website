@@ -70,9 +70,11 @@ export class Post {
 
   @BeforeInsert()
   slugifyPost() {
-    this.slug = slugify(this.title.substring(0, 20), {
+    this.slug = slugify(this.title.substring(0, 80), {
       lower: true,
       replacement: '_',
+      strict: true,
+      remove: /[*+~.()'"!:@]/g,
     });
   }
 }

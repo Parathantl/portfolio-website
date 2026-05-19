@@ -1,4 +1,5 @@
 import { Post } from '@/app/types/blog';
+import { stripMarkdown } from '@/app/lib/strip-markdown';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 3600;
@@ -62,7 +63,7 @@ export async function GET() {
   const postList = posts
     .slice(0, 50)
     .map((post) => {
-      const excerpt = post.excerpt || post.content?.replace(/<[^>]*>/g, '').substring(0, 160) || '';
+      const excerpt = post.excerpt || stripMarkdown(post.content || '').substring(0, 160);
       const categories = post.categories?.map((c) => c.title).join(', ') || '';
       return `- [${post.title}](${SITE_URL}/blog/${post.slug}): ${excerpt}${categories ? ` (${categories})` : ''}`;
     })

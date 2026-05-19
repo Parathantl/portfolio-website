@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import DOMPurify from 'isomorphic-dompurify';
-import { MasterCategory, Post } from '@/app/types/blog';
+import { MasterCategory, PaginatedPosts, Post } from '@/app/types/blog';
+import { renderMarkdownToHtml, stripMarkdown } from '@/app/lib/render-markdown';
 import MasterCategoryPage from '@/app/components/blog/MasterCategoryPage';
 import BlogPostContent from '@/app/components/blog/BlogPostContent';
 import { serverFetch } from '@/app/lib/server-api';
@@ -104,7 +104,7 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
 
   if (type === 'post') {
     const post = data as Post;
-    const textContent = post.content?.replace(/<[^>]*>/g, '') || '';
+    const textContent = stripMarkdown(post.content || '');
     const description =
       post.excerpt || textContent.substring(0, 160) + '...';
 
@@ -178,19 +178,19 @@ export default async function DynamicBlogPage({ params }: PageParams) {
     const post = data as Post;
     const about = await getAboutData();
 
-    // Server-side content sanitization - content will be in initial HTML
-    const sanitizedContent = DOMPurify.sanitize(post.content || '');
+    // Render Markdown → HTML (already sanitized inside renderMarkdownToHtml).
+    const sanitizedContent = renderMarkdownToHtml(post.content || '');
 
-    // Calculate content metrics
-    const wordCount = calculateWordCount(post.content || '');
+    // Calculate content metrics from plain text
+    const textContent = stripMarkdown(post.content || '');
+    const wordCount = calculateWordCount(textContent);
     const timeRequired = wordCountToISO8601(wordCount);
-    const textContent = post.content?.replace(/<[^>]*>/g, '') || '';
     const abstract =
       post.excerpt || textContent.substring(0, 300) + '...';
 
-    // Content-driven schema detection: extract from actual content, not hardcoded title checks
-    const faqPairs = extractFAQFromHTML(post.content || '');
-    const howToSteps = extractHowToSteps(post.content || '');
+    // FAQ/HowTo extractors operate on rendered HTML headings.
+    const faqPairs = extractFAQFromHTML(sanitizedContent);
+    const howToSteps = extractHowToSteps(sanitizedContent);
 
     // Use TechArticle if how-to steps were found, otherwise BlogPosting
     const hasFAQ = faqPairs.length >= 2;
@@ -278,13 +278,26 @@ export default async function DynamicBlogPage({ params }: PageParams) {
   if (type === 'category') {
     const category = data as MasterCategory;
 
-    // Server-fetch posts for this category so they appear in initial HTML
-    let categoryPosts: Post[] = [];
+    // Server-fetch first page so posts appear in initial HTML and pagination is SSR-ready.
+    const PAGE_SIZE = 9;
+    let categoryPage: PaginatedPosts = {
+      items: [],
+      page: 1,
+      limit: PAGE_SIZE,
+      total: 0,
+      totalPages: 1,
+    };
+    let allMasterCategories: MasterCategory[] = [];
     try {
-      categoryPosts = await serverFetch<Post[]>(
-        `/post?masterCategory=${params.slug}`,
-        { revalidate: 3600 }
-      );
+      [categoryPage, allMasterCategories] = await Promise.all([
+        serverFetch<PaginatedPosts>(
+          `/post?page=1&limit=${PAGE_SIZE}&masterCategory=${params.slug}`,
+          { revalidate: 3600 },
+        ),
+        serverFetch<MasterCategory[]>('/master-categories', {
+          revalidate: 3600,
+        }),
+      ]);
     } catch {
       // Will fall back to client-side fetch
     }
@@ -312,7 +325,14 @@ export default async function DynamicBlogPage({ params }: PageParams) {
             dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
           />
         ))}
-        <MasterCategoryPage masterCategory={category} initialPosts={categoryPosts} />
+        <MasterCategoryPage
+          masterCategory={category}
+          initialPosts={categoryPage.items}
+          initialTotal={categoryPage.total}
+          initialPage={categoryPage.page}
+          pageSize={categoryPage.limit}
+          masterCategories={allMasterCategories}
+        />
       </>
     );
   }

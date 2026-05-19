@@ -19,4 +19,8 @@ export class CreateMasterCategoryDto {
   @IsNumber()
   @Type(() => Number)
   displayOrder?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  showInRecentPosts?: boolean;
 }

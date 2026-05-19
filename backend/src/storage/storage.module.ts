@@ -1,11 +1,13 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { StorageService } from './storage.service';
+import { MediaController } from './media.controller';
 import { CloudinaryProvider } from './providers/cloudinary.provider';
 import { LocalStorageProvider } from './providers/local.provider';
 
 @Module({
   imports: [ConfigModule],
+  controllers: [MediaController],
   providers: [
     {
       provide: 'STORAGE_PROVIDER',

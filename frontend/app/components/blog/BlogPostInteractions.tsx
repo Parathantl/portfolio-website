@@ -22,7 +22,7 @@ export default function BlogPostInteractions() {
   // Add copy buttons to code blocks
   useEffect(() => {
     const addCopyButtons = () => {
-      const codeBlocks = document.querySelectorAll('.ql-editor .ql-code-block-container');
+      const codeBlocks = document.querySelectorAll('.prose pre');
 
       codeBlocks.forEach((block) => {
         const codeElement = block as HTMLElement;

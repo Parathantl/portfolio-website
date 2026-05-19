@@ -5,6 +5,7 @@ import { UpdatePostDto } from './dto/update-post.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Post } from './entities/post.entity';
 import { Category } from 'src/category/entities/category.entity';
+import { MasterCategory } from 'src/master-category/entities/master-category.entity';
 import { Repository, In } from 'typeorm';
 import { User } from 'src/auth/entities/user.entity';
 import { GoogleGenerativeAI } from '@google/generative-ai';
@@ -17,6 +18,8 @@ export class PostService {
     @InjectRepository(Post) private readonly repo: Repository<Post>,
     @InjectRepository(Category)
     private readonly categoryRepo: Repository<Category>,
+    @InjectRepository(MasterCategory)
+    private readonly masterCategoryRepo: Repository<MasterCategory>,
     private readonly configService: ConfigService,
   ) {
     const apiKey = this.configService.get<string>('GEMINI_API_KEY');
@@ -57,52 +60,83 @@ export class PostService {
     return await this.repo.save(post);
   }
 
-  async findAll(query?: string) {
-    const myQuery = this.repo
+  async findAll(query: any = {}) {
+    const qb = this.repo
       .createQueryBuilder('post')
       .leftJoinAndSelect('post.categories', 'category')
       .leftJoinAndSelect('category.masterCategory', 'masterCategory')
       .leftJoinAndSelect('post.user', 'user');
 
-    // check if query is present or not
-    if (!(Object.keys(query).length === 0) && query.constructor === Object) {
-      const queryKeys = Object.keys(query);
-
-      // check if title key is present
-      if (queryKeys.includes('title')) {
-        myQuery.where('post.title LIKE :title', {
-          title: `%${query['title']}%`,
-        });
-      }
-
-      // check if the sort key is present, we will sort by title field only
-      if (queryKeys.includes('sort')) {
-        myQuery.orderBy('post.title', query['sort'].toUpperCase()); // ASC or DESC
-      }
-
-      // check if category is present, show only selected category items
-      if (queryKeys.includes('category')) {
-        myQuery.andWhere('category.title = :cat', { cat: query['category'] });
-      }
-
-      // Filter by master category
-      if (queryKeys.includes('masterCategory')) {
-        myQuery.andWhere('masterCategory.slug = :masterCat', {
-          masterCat: query['masterCategory'],
-        });
-      }
-
-      // Add default ordering by createdOn (newest first) if no sort specified
-      if (!queryKeys.includes('sort')) {
-        myQuery.orderBy('post.createdOn', 'DESC');
-      }
-
-      return await myQuery.getMany();
-    } else {
-      // Add default ordering by createdOn (newest first)
-      myQuery.orderBy('post.createdOn', 'DESC');
-      return await myQuery.getMany();
+    // Search by title (case-insensitive). Accept either `q` or legacy `title`.
+    const search = query.q ?? query.title;
+    if (search) {
+      qb.andWhere('post.title ILIKE :search', { search: `%${search}%` });
     }
+
+    if (query.category) {
+      qb.andWhere('category.title = :cat', { cat: query.category });
+    }
+
+    if (query.masterCategory) {
+      qb.andWhere('masterCategory.slug = :masterCat', {
+        masterCat: query.masterCategory,
+      });
+    }
+
+    if (query.sort) {
+      qb.orderBy('post.title', String(query.sort).toUpperCase() as 'ASC' | 'DESC');
+    } else {
+      qb.orderBy('post.createdOn', 'DESC');
+    }
+
+    // Paginated mode is opt-in via the `page` query param so existing callers
+    // (admin lists, sitemap, etc.) keep getting the full array.
+    if (query.page !== undefined) {
+      const page = Math.max(1, parseInt(query.page, 10) || 1);
+      const limit = Math.min(
+        50,
+        Math.max(1, parseInt(query.limit, 10) || 9),
+      );
+      qb.skip((page - 1) * limit).take(limit);
+      const [items, total] = await qb.getManyAndCount();
+      return {
+        items,
+        page,
+        limit,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / limit)),
+      };
+    }
+
+    return qb.getMany();
+  }
+
+  async findRecent(limit: number = 3): Promise<Post[]> {
+    // Posts whose master category is flagged showInRecentPosts; if no master
+    // category is flagged yet, fall back to most-recent posts so the homepage
+    // isn't empty.
+    const flaggedCount = await this.masterCategoryRepo.count({
+      where: { showInRecentPosts: true },
+    });
+
+    const qb = this.repo
+      .createQueryBuilder('post')
+      .leftJoinAndSelect('post.categories', 'category')
+      .leftJoinAndSelect('category.masterCategory', 'masterCategory')
+      .leftJoinAndSelect('post.user', 'user')
+      .orderBy('post.createdOn', 'DESC')
+      .limit(limit);
+
+    if (flaggedCount > 0) {
+      qb.innerJoin('post.categories', 'flaggedCategory')
+        .innerJoin(
+          'flaggedCategory.masterCategory',
+          'flaggedMaster',
+          'flaggedMaster.showInRecentPosts = true',
+        );
+    }
+
+    return qb.getMany();
   }
 
   async findOne(id: number) {
@@ -253,8 +287,20 @@ export class PostService {
       );
     }
 
-    // Strip HTML tags for the AI prompt
-    const plainText = content.replace(/<[^>]*>/g, '').trim();
+    // Strip Markdown syntax for the AI prompt (best-effort, just enough for context).
+    const plainText = content
+      .replace(/```[\s\S]*?```/g, ' ') // fenced code blocks
+      .replace(/`[^`]*`/g, ' ') // inline code
+      .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ') // images
+      .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1') // links → text
+      .replace(/[*_~]{1,3}([^*_~]+)[*_~]{1,3}/g, '$1') // emphasis
+      .replace(/^#{1,6}\s+/gm, '') // headings
+      .replace(/^>\s+/gm, '') // blockquotes
+      .replace(/^[-*+]\s+/gm, '') // bullets
+      .replace(/^\d+\.\s+/gm, '') // ordered list
+      .replace(/<[^>]+>/g, ' ') // any stray HTML
+      .replace(/\s+/g, ' ')
+      .trim();
     const truncatedText = plainText.substring(0, 3000);
 
     const prompt = `You are an SEO expert. Generate a concise, compelling excerpt (2-3 sentences, max 160 characters) for the following blog post. The excerpt should:

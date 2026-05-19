@@ -8,7 +8,7 @@ import ImageUpload from '../../../../components/ImageUpload';
 import { blogAPI } from '@/app/lib/api';
 import { Category, MasterCategory, Post } from '@/app/types/blog';
 
-const RichTextEditor = dynamic(() => import('../../../../components/RichTextEditor'), { ssr: false });
+const MarkdownEditor = dynamic(() => import('../../../../components/MarkdownEditor'), { ssr: false });
 
 const EditPost: React.FC = () => {
   const router = useRouter();
@@ -301,10 +301,17 @@ const EditPost: React.FC = () => {
               Content *
             </label>
             <div className="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
-              <RichTextEditor value={content} onChange={setContent} />
+              <MarkdownEditor
+                value={content}
+                onChange={setContent}
+                onImageUpload={async (file) => {
+                  const res = await blogAPI.uploadImage(file);
+                  return res.filePath;
+                }}
+              />
             </div>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Update your blog post content using the rich text editor
+              Update your blog post in Markdown.
             </p>
           </div>
 

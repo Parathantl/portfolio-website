@@ -1,5 +1,10 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { IStorageProvider, UploadResult } from './storage.interface';
+import {
+  IStorageProvider,
+  ListOptions,
+  ListResult,
+  UploadResult,
+} from './storage.interface';
 import { Express } from 'express';
 
 @Injectable()
@@ -22,5 +27,9 @@ export class StorageService {
 
   getFileUrl(publicId: string): string {
     return this.storageProvider.getFileUrl(publicId);
+  }
+
+  async listFiles(opts?: ListOptions): Promise<ListResult> {
+    return this.storageProvider.listFiles(opts);
   }
 }
