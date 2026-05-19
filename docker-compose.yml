@@ -27,7 +27,7 @@ services:
   # Backend Service (NestJS) - Exposed to localhost only for Nginx
   backend:
     build:
-      context: ./blog-backend
+      context: ./backend
       dockerfile: Dockerfile
     container_name: blog-backend
     restart: unless-stopped
@@ -79,7 +79,7 @@ services:
   # Frontend Service (Next.js) - Proxied through Nginx
   frontend:
     build:
-      context: ./blog
+      context: ./frontend
       dockerfile: Dockerfile
       args:
         - NEXT_PUBLIC_API_URL=/api
@@ -125,7 +125,7 @@ services:
                                                                                                                                                                                                             
   dms-backend:
     build:                                                                                                                                                                                              
-      context: ./distribution-mgt-backend                 
+      context: ../distribution-mgt/distribution-mgt-backend                 
       dockerfile: Dockerfile
     container_name: dms-backend
     restart: unless-stopped                                                                                                                                                                             
@@ -148,7 +148,7 @@ services:
 
   dms-frontend:
     build:
-      context: ./distribution-mgt-frontend
+      context: ./distribution-mgt/distribution-mgt-frontend
       dockerfile: Dockerfile                                                                                                                                                                            
       args:
         - VITE_API_URL=https://dms-api.parathan.com/api                                                                                                                                                 
