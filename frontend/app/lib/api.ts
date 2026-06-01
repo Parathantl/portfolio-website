@@ -40,9 +40,13 @@ export const portfolioAPI = {
 // Blog API
 export const blogAPI = {
   // Posts
+  // Admin-only listing. Sends the JWT cookie so the backend includes drafts;
+  // public pages use getPostsPaginated / serverFetch (no cookie -> published only).
   getPosts: async (filters?: any) => {
     const params = filters ? `?${new URLSearchParams(filters)}` : '';
-    const response = await fetch(`${API_BASE_URL}/post${params}`);
+    const response = await fetch(`${API_BASE_URL}/post${params}`, {
+      credentials: 'include',
+    });
     return response.json();
   },
 
@@ -51,12 +55,14 @@ export const blogAPI = {
     limit?: number;
     q?: string;
     masterCategory?: string;
+    category?: string;
   }) => {
     const search = new URLSearchParams();
     search.set('page', String(params.page));
     search.set('limit', String(params.limit ?? 9));
     if (params.q) search.set('q', params.q);
     if (params.masterCategory) search.set('masterCategory', params.masterCategory);
+    if (params.category) search.set('category', params.category);
     const response = await fetch(`${API_BASE_URL}/post?${search.toString()}`);
     return response.json();
   },

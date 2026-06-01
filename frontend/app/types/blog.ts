@@ -45,11 +45,14 @@ export interface PaginatedPosts {
 }
 
 // Post types
+export type PostStatus = 'draft' | 'published';
+
 export interface Post {
   id: number;
   title: string;
   content: string;
   slug: string;
+  status?: PostStatus;
   mainImageUrl?: string;
   excerpt?: string;
   userId: number;
@@ -67,6 +70,8 @@ export interface CreatePostDto {
   content: string;
   mainImageUrl?: string;
   categoryIds: number[];
+  excerpt?: string;
+  status?: PostStatus;
 }
 
 export interface UpdatePostDto {
@@ -74,6 +79,8 @@ export interface UpdatePostDto {
   content?: string;
   mainImageUrl?: string;
   categoryIds?: number[];
+  excerpt?: string;
+  status?: PostStatus;
 }
 
 export interface CreateCategoryDto {

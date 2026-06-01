@@ -24,7 +24,8 @@ const EditPost: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [masterCategories, setMasterCategories] = useState<MasterCategory[]>([]);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [submitting, setSubmitting] = useState<'draft' | 'published' | null>(null);
+  const [status, setStatus] = useState<'draft' | 'published'>('published');
   const [generatingExcerpt, setGeneratingExcerpt] = useState(false);
   const [slug, setSlug] = useState('');
 
@@ -63,6 +64,7 @@ const EditPost: React.FC = () => {
       setExcerpt(data.excerpt || '');
       setMainImageUrl(data.mainImageUrl || '');
       setSlug(data.slug);
+      setStatus(data.status || 'published');
 
       // Set category IDs from the post's categories
       if (data.categories && data.categories.length > 0) {
@@ -115,44 +117,53 @@ const EditPost: React.FC = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const submitPost = async (targetStatus: 'draft' | 'published') => {
     if (!title.trim()) {
       toast.error('Please enter a title');
       return;
     }
 
-    // Check if content is empty (Quill might return HTML with just empty tags)
+    // Check if content is empty (editor may return markup with just empty tags)
     const strippedContent = content.replace(/<[^>]*>/g, '').trim();
     if (!strippedContent) {
       toast.error('Please enter content');
       return;
     }
 
-    if (categoryIds.length === 0) {
-      toast.error('Please select at least one category');
+    // A draft can be saved with no category yet; publishing still requires one.
+    if (targetStatus === 'published' && categoryIds.length === 0) {
+      toast.error('Please select at least one category before publishing');
       return;
     }
 
-    setSaving(true);
+    setSubmitting(targetStatus);
 
     try {
-      const result = await blogAPI.updatePost(slug, {
+      await blogAPI.updatePost(slug, {
         title,
         content,
         mainImageUrl: mainImageUrl || undefined,
         categoryIds,
         excerpt: excerpt || undefined,
+        status: targetStatus,
       });
 
-      toast.success('Post updated successfully!');
+      setStatus(targetStatus);
+      toast.success(
+        targetStatus === 'published'
+          ? status === 'published'
+            ? 'Post updated!'
+            : 'Post published!'
+          : status === 'published'
+            ? 'Post moved back to draft'
+            : 'Draft saved!',
+      );
       router.push('/admin/posts');
     } catch (error: any) {
       console.error('Error updating post:', error);
       toast.error(error?.message || 'Failed to update post');
     } finally {
-      setSaving(false);
+      setSubmitting(null);
     }
   };
 
@@ -180,15 +191,28 @@ const EditPost: React.FC = () => {
   return (
     <div className="max-w-4xl">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-          Edit Post
-        </h1>
+        <div className="flex items-center gap-3 mb-2">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            Edit Post
+          </h1>
+          <span
+            className={`px-3 py-1 text-xs font-semibold rounded-full ${
+              status === 'draft'
+                ? 'bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200'
+                : 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
+            }`}
+          >
+            {status === 'draft' ? 'Draft' : 'Published'}
+          </span>
+        </div>
         <p className="text-gray-600 dark:text-gray-400">
-          Update your blog post
+          {status === 'draft'
+            ? 'This post is a draft and is not visible to the public yet.'
+            : 'Update your published blog post'}
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
+      <form onSubmit={(e) => e.preventDefault()} className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
         <div className="space-y-6">
           {/* Title */}
           <div>
@@ -365,18 +389,51 @@ const EditPost: React.FC = () => {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-4 pt-6">
-            <button
-              type="submit"
-              disabled={saving}
-              className="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors disabled:opacity-50"
-            >
-              {saving ? 'Saving...' : 'Update Post'}
-            </button>
+          <div className="flex flex-col sm:flex-row gap-4 pt-6">
+            {status === 'draft' ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => submitPost('published')}
+                  disabled={submitting !== null}
+                  className="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors disabled:opacity-50"
+                >
+                  {submitting === 'published' ? 'Publishing...' : 'Publish'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => submitPost('draft')}
+                  disabled={submitting !== null}
+                  className="flex-1 px-6 py-3 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-semibold transition-colors disabled:opacity-50"
+                >
+                  {submitting === 'draft' ? 'Saving...' : 'Save Draft'}
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => submitPost('published')}
+                  disabled={submitting !== null}
+                  className="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors disabled:opacity-50"
+                >
+                  {submitting === 'published' ? 'Saving...' : 'Update Post'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => submitPost('draft')}
+                  disabled={submitting !== null}
+                  className="flex-1 px-6 py-3 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-semibold transition-colors disabled:opacity-50"
+                >
+                  {submitting === 'draft' ? 'Unpublishing...' : 'Unpublish'}
+                </button>
+              </>
+            )}
             <button
               type="button"
               onClick={() => router.push('/admin/posts')}
-              className="flex-1 px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-semibold transition-colors"
+              disabled={submitting !== null}
+              className="flex-1 px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-semibold transition-colors disabled:opacity-50"
             >
               Cancel
             </button>

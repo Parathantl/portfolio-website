@@ -188,6 +188,11 @@ export default function PostsManagement() {
                           </h3>
                           {/* Multiple Category Badges */}
                           <div className="flex flex-wrap gap-2">
+                            {post.status === 'draft' && (
+                              <span className="px-3 py-1 text-xs font-semibold rounded-full bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200">
+                                Draft
+                              </span>
+                            )}
                             {post.categories?.map((category) => (
                               <span
                                 key={category.id}
@@ -219,13 +224,15 @@ export default function PostsManagement() {
 
                     {/* Action Buttons */}
                     <div className="flex flex-wrap gap-2 mt-4">
-                      <Link
-                        href={`/blog/${post.slug}`}
-                        target="_blank"
-                        className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded transition-colors text-center"
-                      >
-                        View
-                      </Link>
+                      {post.status !== 'draft' && (
+                        <Link
+                          href={`/blog/${post.slug}`}
+                          target="_blank"
+                          className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded transition-colors text-center"
+                        >
+                          View
+                        </Link>
+                      )}
                       <Link
                         href={`/admin/posts/${post.id}/edit`}
                         className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded transition-colors text-center"

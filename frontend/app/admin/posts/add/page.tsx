@@ -20,7 +20,7 @@ const AddPost: React.FC = () => {
   const [mainImageUrl, setMainImageUrl] = useState('');
   const [categories, setCategories] = useState<Category[]>([]);
   const [masterCategories, setMasterCategories] = useState<MasterCategory[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState<'draft' | 'published' | null>(null);
   const [generatingExcerpt, setGeneratingExcerpt] = useState(false);
 
   useEffect(() => {
@@ -84,9 +84,7 @@ const AddPost: React.FC = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const submitPost = async (status: 'draft' | 'published') => {
     if (!title.trim()) {
       toast.error('Please enter a title');
       return;
@@ -97,12 +95,13 @@ const AddPost: React.FC = () => {
       return;
     }
 
-    if (categoryIds.length === 0) {
-      toast.error('Please select at least one category');
+    // A draft can be saved with no category yet; publishing still requires one.
+    if (status === 'published' && categoryIds.length === 0) {
+      toast.error('Please select at least one category before publishing');
       return;
     }
 
-    setLoading(true);
+    setSubmitting(status);
 
     try {
       await blogAPI.createPost({
@@ -111,15 +110,16 @@ const AddPost: React.FC = () => {
         mainImageUrl: mainImageUrl || undefined,
         categoryIds,
         excerpt: excerpt || undefined,
+        status,
       });
 
-      toast.success('Post created successfully!');
+      toast.success(status === 'draft' ? 'Draft saved!' : 'Post published!');
       router.push('/admin/posts');
     } catch (error: any) {
       console.error('Error creating post:', error);
-      toast.error(error?.response?.data?.message || 'Failed to create post');
+      toast.error(error?.response?.data?.message || error?.message || 'Failed to save post');
     } finally {
-      setLoading(false);
+      setSubmitting(null);
     }
   };
 
@@ -139,7 +139,7 @@ const AddPost: React.FC = () => {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
+      <form onSubmit={(e) => e.preventDefault()} className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
         <div className="space-y-6">
           {/* Title */}
           <div>
@@ -316,18 +316,28 @@ const AddPost: React.FC = () => {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-4 pt-6">
+          <div className="flex flex-col sm:flex-row gap-4 pt-6">
             <button
-              type="submit"
-              disabled={loading}
+              type="button"
+              onClick={() => submitPost('published')}
+              disabled={submitting !== null}
               className="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors disabled:opacity-50"
             >
-              {loading ? 'Publishing...' : 'Publish Post'}
+              {submitting === 'published' ? 'Publishing...' : 'Publish Post'}
+            </button>
+            <button
+              type="button"
+              onClick={() => submitPost('draft')}
+              disabled={submitting !== null}
+              className="flex-1 px-6 py-3 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-semibold transition-colors disabled:opacity-50"
+            >
+              {submitting === 'draft' ? 'Saving...' : 'Save as Draft'}
             </button>
             <button
               type="button"
               onClick={() => router.push('/admin/posts')}
-              className="flex-1 px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-semibold transition-colors"
+              disabled={submitting !== null}
+              className="flex-1 px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-semibold transition-colors disabled:opacity-50"
             >
               Cancel
             </button>
