@@ -6,9 +6,10 @@ interface BlogCardProps {
   post: Post & {
     createdOn?: string; // Legacy field name support
   };
+  authorImage?: string; // shared portfolio profile image (single-author blog)
 }
 
-export default function BlogCard({ post }: BlogCardProps) {
+export default function BlogCard({ post, authorImage }: BlogCardProps) {
   // Calculate read time (assuming 200 words per minute)
   const calculateReadTime = (content: string) => {
     const text = stripMarkdown(content);
@@ -92,11 +93,11 @@ export default function BlogCard({ post }: BlogCardProps) {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-sm text-gray-500 dark:text-gray-400 pt-4 border-t border-gray-200 dark:border-gray-700">
           {/* Author */}
           <div className="flex items-center gap-2">
-            {post.user?.profilePic ? (
+            {post.user?.profilePic || authorImage ? (
               <img
-                src={post.user.profilePic}
-                alt={`${post.user.firstname} ${post.user.lastname}`}
-                className="w-8 h-8 rounded-full"
+                src={post.user?.profilePic || authorImage}
+                alt={`${post.user?.firstname ?? ''} ${post.user?.lastname ?? ''}`.trim() || 'Author'}
+                className="w-8 h-8 rounded-full object-cover"
               />
             ) : (
               <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold">

@@ -10,6 +10,7 @@ interface MasterCategoryPageProps {
   initialPage?: number;
   pageSize?: number;
   masterCategories?: MasterCategory[];
+  authorImage?: string;
 }
 
 export default function MasterCategoryPage({
@@ -19,6 +20,7 @@ export default function MasterCategoryPage({
   initialPage,
   pageSize,
   masterCategories,
+  authorImage,
 }: MasterCategoryPageProps) {
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 py-12">
@@ -43,6 +45,7 @@ export default function MasterCategoryPage({
           initialPage={initialPage}
           pageSize={pageSize}
           initialMasterCategories={masterCategories}
+          authorImage={authorImage}
         />
       </div>
     </div>

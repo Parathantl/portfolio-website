@@ -43,6 +43,36 @@ body {
   position: relative;
 }
 
+/* Blog post blockquotes render as clean callout/note panels rather than italic
+   quotations: strip the typography plugin's auto quote-marks and italics, and
+   give them a soft tinted panel with a blue accent bar. So `> **Terms Used
+   Today**` reads as an upright bold label on a note box, not a "quotation". */
+.prose blockquote {
+  font-style: normal;
+  font-weight: 400;
+  border-left: 4px solid #3b82f6; /* blue-500 */
+  border-radius: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+  background-color: #eff6ff; /* blue-50 */
+  color: #374151; /* gray-700 */
+}
+
+/* Remove the plugin's decorative open/close curly quotes around blockquotes. */
+.prose blockquote p:first-of-type::before,
+.prose blockquote p:last-of-type::after {
+  content: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  .prose blockquote {
+    background-color: rgba(30, 58, 138, 0.18); /* blue-900 @ ~18% */
+    border-left-color: #60a5fa; /* blue-400 */
+    color: #d1d5db; /* gray-300 */
+  }
+}
+
 .copy-code-button {
   position: absolute;
   top: 0.75em;

@@ -7,6 +7,7 @@ import ReadingProgress from '@/app/components/blog/ReadingProgress';
 import NewsletterSignup from '@/app/components/blog/NewsletterSignup';
 import BlogPostInteractions from '@/app/components/blog/BlogPostInteractions';
 import AuthorBio from '@/app/components/blog/AuthorBio';
+import AdminEditButton from '@/app/components/blog/AdminEditButton';
 import { SITE_URL } from '@/app/lib/structured-data';
 
 interface AuthorInfo {
@@ -52,21 +53,29 @@ export default function BlogPostContent({ slug, post, sanitizedContent, authorIn
       <article className="w-full">
         {/* Header Section */}
         <div className="max-w-6xl mx-auto px-4 md:px-8 lg:px-12">
-          <nav aria-label="Breadcrumb">
+          <nav
+            aria-label="Breadcrumb"
+            className="flex items-center justify-between gap-4 mb-4 md:mb-6"
+          >
             <Link
               href="/blog"
-              className="inline-block text-blue-600 dark:text-blue-400 hover:underline mb-4 md:mb-6 text-sm md:text-base"
+              className="inline-block text-blue-600 dark:text-blue-400 hover:underline text-sm md:text-base"
             >
               ← Back to Blog
             </Link>
+            <AdminEditButton postId={post.id} />
           </nav>
 
           <header className="mb-6 md:mb-8">
             {post.categories && post.categories.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-4">
                 {post.categories.map((category) => {
+                  // Prefer the child-category page; fall back to the master
+                  // category (or the blog index) when a slug is missing.
                   const masterCategorySlug = category.masterCategory?.slug || 'blog';
-                  const blogPath = `/blog/${masterCategorySlug}`;
+                  const blogPath = category.slug
+                    ? `/blog/category/${category.slug}`
+                    : `/blog/${masterCategorySlug}`;
 
                   return (
                     <Link
@@ -143,41 +152,40 @@ export default function BlogPostContent({ slug, post, sanitizedContent, authorIn
         {/* Content Section */}
         <section className="max-w-6xl mx-auto px-4 md:px-8 lg:px-12">
 
-          <SocialShare
-            url={postUrl}
-            title={post.title}
-          />
+          <div className="max-w-3xl mx-auto">
+            <SocialShare
+              url={postUrl}
+              title={post.title}
+            />
+          </div>
 
-          {/* Article Content - SSR rendered, visible to crawlers */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 md:p-10 lg:p-16 xl:p-20">
+          {/* Article Content - SSR rendered, visible to crawlers.
+              max-w-3xl keeps the reading column ~70 chars wide for legibility. */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm max-w-3xl mx-auto p-6 md:p-8 lg:p-10">
             <div
-              className="prose dark:prose-invert max-w-none prose-base md:prose-lg lg:prose-xl xl:prose-2xl
+              className="prose md:prose-lg dark:prose-invert max-w-none
                 prose-headings:text-gray-900 dark:prose-headings:text-white
-                prose-p:text-gray-700 dark:prose-p:text-gray-300 prose-p:text-base md:prose-p:text-lg lg:prose-p:text-xl
-                prose-a:text-blue-600 dark:prose-a:text-blue-400 prose-a:underline hover:prose-a:text-blue-700
+                prose-headings:font-bold prose-headings:tracking-tight prose-headings:scroll-mt-24
+                prose-p:text-gray-700 dark:prose-p:text-gray-300 prose-p:leading-relaxed
+                prose-li:text-gray-700 dark:prose-li:text-gray-300 prose-li:my-1
+                prose-a:text-blue-600 dark:prose-a:text-blue-400 prose-a:font-medium hover:prose-a:text-blue-700
                 prose-strong:text-gray-900 dark:prose-strong:text-white prose-strong:font-semibold
-                prose-img:rounded-xl prose-img:shadow-lg prose-img:transition-transform prose-img:hover:scale-[1.01]
-                prose-img:w-full
-                prose-headings:leading-snug prose-headings:mb-4 prose-headings:mt-8
-                prose-h1:text-2xl md:prose-h1:text-3xl lg:prose-h1:text-4xl xl:prose-h1:text-5xl prose-h1:leading-snug
-                prose-h2:text-xl md:prose-h2:text-2xl lg:prose-h2:text-3xl xl:prose-h2:text-4xl prose-h2:leading-snug
-                prose-h3:text-lg md:prose-h3:text-xl lg:prose-h3:text-2xl xl:prose-h3:text-3xl prose-h3:leading-snug
-                prose-li:text-base md:prose-li:text-lg lg:prose-li:text-xl
-                prose-blockquote:border-l-4 prose-blockquote:border-blue-500 prose-blockquote:pl-6 prose-blockquote:italic
-                prose-blockquote:text-gray-600 dark:prose-blockquote:text-gray-400 prose-blockquote:text-lg md:prose-blockquote:text-xl"
+                prose-img:rounded-xl prose-img:shadow-md prose-img:w-full"
               dangerouslySetInnerHTML={{ __html: sanitizedContent }}
             />
           </div>
 
           {authorInfo && (
-            <AuthorBio
-              name={authorInfo.name}
-              bio={authorInfo.bio}
-              profileImageUrl={authorInfo.profileImageUrl}
-              linkedinUrl={authorInfo.linkedinUrl}
-              githubUrl={authorInfo.githubUrl}
-              twitterUrl={authorInfo.twitterUrl}
-            />
+            <div className="max-w-3xl mx-auto">
+              <AuthorBio
+                name={authorInfo.name}
+                bio={authorInfo.bio}
+                profileImageUrl={authorInfo.profileImageUrl}
+                linkedinUrl={authorInfo.linkedinUrl}
+                githubUrl={authorInfo.githubUrl}
+                twitterUrl={authorInfo.twitterUrl}
+              />
+            </div>
           )}
 
           <aside aria-label="Newsletter and related content">

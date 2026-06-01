@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import BlogList from '../components/blog/BlogList';
 import { serverFetch } from '@/app/lib/server-api';
 import { getBreadcrumbSchema, SITE_URL } from '../lib/structured-data';
+import { getAuthorImage } from '@/app/lib/author';
 import { PaginatedPosts, MasterCategory } from '@/app/types/blog';
 
 export const dynamic = 'force-dynamic';
@@ -43,9 +44,10 @@ async function getMasterCategories(): Promise<MasterCategory[]> {
 }
 
 export default async function BlogPage() {
-  const [initial, masterCategories] = await Promise.all([
+  const [initial, masterCategories, authorImage] = await Promise.all([
     getInitialPosts(),
     getMasterCategories(),
+    getAuthorImage(),
   ]);
 
   const breadcrumb = getBreadcrumbSchema([
@@ -76,6 +78,7 @@ export default async function BlogPage() {
             initialPage={initial.page}
             pageSize={initial.limit}
             initialMasterCategories={masterCategories}
+            authorImage={authorImage}
           />
         </div>
       </div>

@@ -6,6 +6,7 @@ import SkillsSection from './components/portfolio/SkillsSection';
 import BlogList from './components/blog/BlogList';
 import { serverFetch } from './lib/server-api';
 import { SITE_URL } from './lib/structured-data';
+import { encodeAuthorImage } from './lib/author';
 import { Post } from './types/blog';
 
 export const dynamic = 'force-dynamic';
@@ -138,7 +139,12 @@ export default async function Home() {
               Latest articles and insights
             </p>
           </div>
-          <BlogList limit={3} initialPosts={posts} showFilters={false} />
+          <BlogList
+            limit={3}
+            initialPosts={posts}
+            showFilters={false}
+            authorImage={encodeAuthorImage(about?.profileImageUrl)}
+          />
           <div className="text-center mt-8">
             <Link
               href="/blog"

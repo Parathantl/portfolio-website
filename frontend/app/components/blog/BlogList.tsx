@@ -8,12 +8,14 @@ import { Post, MasterCategory } from '@/app/types/blog';
 
 interface BlogListProps {
   masterCategorySlug?: string; // route-level lock to one master (e.g. /blog/tech)
+  categorySlug?: string; // route-level lock to one child category (e.g. /blog/category/machine_learning)
   limit?: number; // teaser mode: render initialPosts as-is, no pagination
   initialPosts?: Post[];
   initialTotal?: number;
   initialPage?: number;
   pageSize?: number;
   initialMasterCategories?: MasterCategory[];
+  authorImage?: string; // shared single-author avatar, resolved server-side
   showFilters?: boolean;
 }
 
@@ -21,12 +23,14 @@ const DEFAULT_PAGE_SIZE = 9;
 
 export default function BlogList({
   masterCategorySlug,
+  categorySlug,
   limit,
   initialPosts,
   initialTotal,
   initialPage,
   pageSize = DEFAULT_PAGE_SIZE,
   initialMasterCategories,
+  authorImage,
   showFilters = true,
 }: BlogListProps) {
   const router = useRouter();
@@ -100,6 +104,7 @@ export default function BlogList({
           limit: pageSize,
           q: debouncedQuery || undefined,
           masterCategory: masterSlug,
+          category: categorySlug,
         });
 
         if (cancelled) return;
@@ -124,6 +129,7 @@ export default function BlogList({
     debouncedQuery,
     selectedMaster,
     masterCategorySlug,
+    categorySlug,
     pageSize,
     masterCategories,
   ]);
@@ -235,7 +241,7 @@ export default function BlogList({
           }`}
         >
           {posts.map((post) => (
-            <BlogCard key={post.id} post={post} />
+            <BlogCard key={post.id} post={post} authorImage={authorImage} />
           ))}
         </div>
       )}

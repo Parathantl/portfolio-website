@@ -5,6 +5,7 @@ import { renderMarkdownToHtml, stripMarkdown } from '@/app/lib/render-markdown';
 import MasterCategoryPage from '@/app/components/blog/MasterCategoryPage';
 import BlogPostContent from '@/app/components/blog/BlogPostContent';
 import { serverFetch } from '@/app/lib/server-api';
+import { getAuthorImage } from '@/app/lib/author';
 import {
   getBlogPostingSchema,
   getTechArticleSchema,
@@ -288,8 +289,9 @@ export default async function DynamicBlogPage({ params }: PageParams) {
       totalPages: 1,
     };
     let allMasterCategories: MasterCategory[] = [];
+    let authorImage: string | undefined;
     try {
-      [categoryPage, allMasterCategories] = await Promise.all([
+      [categoryPage, allMasterCategories, authorImage] = await Promise.all([
         serverFetch<PaginatedPosts>(
           `/post?page=1&limit=${PAGE_SIZE}&masterCategory=${params.slug}`,
           { revalidate: 3600 },
@@ -297,6 +299,7 @@ export default async function DynamicBlogPage({ params }: PageParams) {
         serverFetch<MasterCategory[]>('/master-categories', {
           revalidate: 3600,
         }),
+        getAuthorImage(),
       ]);
     } catch {
       // Will fall back to client-side fetch
@@ -332,6 +335,7 @@ export default async function DynamicBlogPage({ params }: PageParams) {
           initialPage={categoryPage.page}
           pageSize={categoryPage.limit}
           masterCategories={allMasterCategories}
+          authorImage={authorImage}
         />
       </>
     );
