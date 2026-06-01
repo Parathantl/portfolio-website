@@ -27,6 +27,11 @@ export class Post {
   @Column()
   slug: string;
 
+  // 'draft' = author-only work in progress, hidden from all public views.
+  // 'published' = live. Defaults to published so pre-existing posts stay live.
+  @Column({ type: 'varchar', default: 'published' })
+  status: 'draft' | 'published';
+
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdOn: Date;
 

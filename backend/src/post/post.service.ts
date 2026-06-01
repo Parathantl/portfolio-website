@@ -60,12 +60,20 @@ export class PostService {
     return await this.repo.save(post);
   }
 
-  async findAll(query: any = {}) {
+  async findAll(query: any = {}, includeDrafts = false) {
     const qb = this.repo
       .createQueryBuilder('post')
       .leftJoinAndSelect('post.categories', 'category')
       .leftJoinAndSelect('category.masterCategory', 'masterCategory')
       .leftJoinAndSelect('post.user', 'user');
+
+    // Anonymous/public callers only ever see published posts. Authenticated
+    // admins see everything, but may narrow to a single status via ?status=.
+    if (!includeDrafts) {
+      qb.andWhere('post.status = :status', { status: 'published' });
+    } else if (query.status === 'draft' || query.status === 'published') {
+      qb.andWhere('post.status = :status', { status: query.status });
+    }
 
     // Search by title (case-insensitive). Accept either `q` or legacy `title`.
     const search = query.q ?? query.title;
@@ -74,7 +82,11 @@ export class PostService {
     }
 
     if (query.category) {
-      qb.andWhere('category.title = :cat', { cat: query.category });
+      // Accept either the URL-safe slug (used by child-category pages) or the
+      // legacy human title, so old callers keep working.
+      qb.andWhere('(category.slug = :cat OR category.title = :cat)', {
+        cat: query.category,
+      });
     }
 
     if (query.masterCategory) {
@@ -124,6 +136,7 @@ export class PostService {
       .leftJoinAndSelect('post.categories', 'category')
       .leftJoinAndSelect('category.masterCategory', 'masterCategory')
       .leftJoinAndSelect('post.user', 'user')
+      .where('post.status = :status', { status: 'published' })
       .orderBy('post.createdOn', 'DESC')
       .limit(limit);
 
@@ -152,15 +165,22 @@ export class PostService {
   }
 
   async findBySlug(slug: string) {
+    let post: Post;
     try {
-      const post = await this.repo.findOneOrFail({
+      post = await this.repo.findOneOrFail({
         where: { slug },
         relations: ['categories', 'categories.masterCategory', 'user'],
       });
-      return post;
     } catch (err) {
       throw new BadRequestException(`Post with slug ${slug} not found`);
     }
+
+    // Drafts are not reachable by their public pretty URL.
+    if (post.status !== 'published') {
+      throw new BadRequestException(`Post with slug ${slug} not found`);
+    }
+
+    return post;
   }
 
   async findRelatedPosts(slug: string, limit: number = 4): Promise<Post[]> {
@@ -182,6 +202,7 @@ export class PostService {
         .leftJoinAndSelect('category.masterCategory', 'masterCategory')
         .leftJoinAndSelect('post.user', 'user')
         .where('post.id != :currentPostId', { currentPostId: currentPost.id })
+        .andWhere('post.status = :status', { status: 'published' })
         .orderBy('post.createdOn', 'DESC')
         .limit(limit)
         .getMany();
@@ -203,7 +224,8 @@ export class PostService {
       .leftJoinAndSelect('post.categories', 'category')
       .leftJoinAndSelect('category.masterCategory', 'masterCategory')
       .leftJoinAndSelect('post.user', 'user')
-      .where('post.id != :currentPostId', { currentPostId: currentPost.id });
+      .where('post.id != :currentPostId', { currentPostId: currentPost.id })
+      .andWhere('post.status = :status', { status: 'published' });
 
     // Add category/master category filter if we have any
     if (categoryIds.length > 0 || masterCategoryIds.length > 0) {
@@ -235,6 +257,7 @@ export class PostService {
       throw new BadRequestException('Post not found');
     }
 
+    const previousStatus = post.status;
     post.modifiedOn = new Date(Date.now());
 
     const { categoryIds, ...postData } = updatePostDto as any;
@@ -262,6 +285,13 @@ export class PostService {
     }
 
     Object.assign(post, postData);
+
+    // Treat going live for the first time as the post's publish date, so a draft
+    // written weeks ago still surfaces at the top of recent/listing feeds.
+    if (previousStatus !== 'published' && post.status === 'published') {
+      post.createdOn = new Date(Date.now());
+    }
+
     return this.repo.save(post);
   }
 

@@ -4,6 +4,7 @@ import {
   IsOptional,
   IsString,
   IsNumber,
+  IsIn,
 } from 'class-validator';
 
 export class CreatePostDto {
@@ -27,4 +28,9 @@ export class CreatePostDto {
   @IsOptional()
   @IsString()
   excerpt: string;
+
+  // Omitted on legacy/public callers -> entity default 'published'.
+  @IsOptional()
+  @IsIn(['draft', 'published'])
+  status?: 'draft' | 'published';
 }

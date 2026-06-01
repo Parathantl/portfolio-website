@@ -49,8 +49,11 @@ export class PostController {
   @Get()
   @UseInterceptors(ClassSerializerInterceptor)
   @UseGuards(CurrentUserGuard)
-  findAll(@Query() query: any) {
-    return this.postService.findAll(query);
+  findAll(@Query() query: any, @Req() req: Request) {
+    // CurrentUserGuard attaches req.user when a valid JWT cookie is present and
+    // lets anonymous requests through. Only authenticated admins see drafts.
+    const includeDrafts = !!req.user;
+    return this.postService.findAll(query, includeDrafts);
   }
 
   @Get('recent')
