@@ -22,6 +22,13 @@ export const KNOWS_ABOUT = [
   'Amazon Web Services',
 ];
 
+// Image URLs stored with a literal space (e.g. ".../my photo.png") are invalid
+// in JSON-LD and fail to fetch (HTTP 000) for crawlers. encodeURI repairs the
+// space without double-encoding already-valid URLs (it leaves % untouched).
+export function encodeImageUrl(url?: string): string | undefined {
+  return url ? encodeURI(url) : undefined;
+}
+
 export function getPersonSchema(about?: {
   fullName?: string;
   tagline?: string;
@@ -50,7 +57,7 @@ export function getPersonSchema(about?: {
     jobTitle: about?.tagline || 'Full Stack Developer & Technical Blogger',
     description: about?.bio || 'Full Stack Developer and Technical Blogger',
     url: `${SITE_URL}/portfolio/about`,
-    image: about?.profileImageUrl,
+    image: encodeImageUrl(about?.profileImageUrl),
     email: about?.email ? `mailto:${about.email}` : undefined,
     address: about?.location
       ? { '@type': 'PostalAddress', addressLocality: about.location }
@@ -146,6 +153,7 @@ export function getBlogPostingSchema(
     ? `${post.user.firstname} ${post.user.lastname}`
     : 'Parathan Thiyagalingam';
   const { published, modified } = getPostDates(post);
+  const mainImage = encodeImageUrl(post.mainImageUrl);
 
   return {
     '@context': 'https://schema.org',
@@ -154,7 +162,7 @@ export function getBlogPostingSchema(
     description: description,
     abstract: options?.abstract || description,
     articleBody: options?.articleBody || textContent,
-    image: post.mainImageUrl ? [post.mainImageUrl] : undefined,
+    image: mainImage ? [mainImage] : undefined,
     datePublished: published,
     dateModified: modified,
     author: { '@type': 'Person', '@id': PERSON_ID, name: authorName },
@@ -233,7 +241,7 @@ export function getHowToSchema(
     name: title,
     description: description,
     totalTime: options?.totalTime,
-    image: options?.image,
+    image: encodeImageUrl(options?.image),
     step: steps.map((step, index) => ({
       '@type': 'HowToStep',
       position: index + 1,
@@ -277,7 +285,7 @@ export function getSoftwareSourceCodeSchema(project: {
     description: project.description,
     codeRepository: project.githubUrl,
     url: project.projectUrl || `${SITE_URL}/portfolio/projects/${project.id}`,
-    image: project.imageUrl,
+    image: encodeImageUrl(project.imageUrl),
     programmingLanguage: project.technologies,
     author: { '@type': 'Person', '@id': PERSON_ID },
   };

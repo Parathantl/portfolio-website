@@ -30,27 +30,12 @@ server {
     server_name parathan.com;
 
     # Security headers
+    # NOTE: HSTS, CSP, and Referrer-Policy are set in the Next.js app
+    # (frontend/next.config.mjs) so they ship automatically with every deploy.
+    # Keep only the edge-level headers here to avoid duplicate header values.
     add_header X-Frame-Options "SAMEORIGIN" always;
     add_header X-Content-Type-Options "nosniff" always;
     add_header X-XSS-Protection "1; mode=block" always;
-    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
-
-    # HSTS: force HTTPS for 2 years. www -> non-www already redirects over TLS.
-    # (Add the 'preload' token and submit to hstspreload.org only when you are
-    # certain every current and future subdomain will always be HTTPS.)
-    add_header Strict-Transport-Security "max-age=63072000; includeSubDomains" always;
-
-    # Content Security Policy — shipped in Report-Only so it can NEVER break the
-    # site. Load the blog, portfolio, a post with embeds, and /admin, then watch
-    # the browser console for violations. Once clean, rename the header to
-    # "Content-Security-Policy" to enforce. Notes:
-    #   - 'unsafe-inline' on script-src is required by Next.js hydration + the
-    #     inline JSON-LD blocks (no nonce middleware in place).
-    #   - next/font self-hosts Inter, so no Google Fonts origins are needed.
-    #   - img-src allows https: so Cloudinary/markdown-embedded images work.
-    #   - if the admin Markdown editor reports an eval violation, add
-    #     'unsafe-eval' to script-src before enforcing.
-    add_header Content-Security-Policy-Report-Only "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self'; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; upgrade-insecure-requests;" always;
 
     # Client max body size for file uploads
     client_max_body_size 10M;

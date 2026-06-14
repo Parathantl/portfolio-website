@@ -27,7 +27,16 @@ export class LocalStorageProvider implements IStorageProvider {
     folder: string = '',
   ): Promise<UploadResult> {
     const fileExt = file.originalname.split('.').pop()?.toLowerCase();
-    const baseName = file.originalname.split('.')[0];
+    // Sanitize the base name to a URL-safe slug. Original names with spaces or
+    // other unsafe characters (e.g. "my photo.png") otherwise produce filenames
+    // with literal spaces, which break the resulting URL in JSON-LD/OpenGraph.
+    const baseName =
+      file.originalname
+        .replace(/\.[^.]+$/, '') // drop extension
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-') // unsafe chars -> hyphen
+        .replace(/^-+|-+$/g, '') // trim leading/trailing hyphens
+        || 'file';
     const filename = `${baseName}-${Date.now()}.${fileExt}`;
     const folderPath = folder
       ? path.join(this.uploadDir, folder)
