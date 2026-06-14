@@ -57,7 +57,11 @@ export class PostService {
       post.categories = categories;
     }
 
-    return await this.repo.save(post);
+    const saved = await this.repo.save(post);
+    void this.revalidateFrontend(this.postRevalidatePaths(saved.slug), [
+      `post-${saved.slug}`,
+    ]);
+    return saved;
   }
 
   async findAll(query: any = {}, includeDrafts = false) {
@@ -292,7 +296,11 @@ export class PostService {
       post.createdOn = new Date(Date.now());
     }
 
-    return this.repo.save(post);
+    const saved = await this.repo.save(post);
+    void this.revalidateFrontend(this.postRevalidatePaths(saved.slug), [
+      `post-${saved.slug}`,
+    ]);
+    return saved;
   }
 
   async remove(id: number) {
@@ -302,9 +310,62 @@ export class PostService {
       throw new BadRequestException('Post not found');
     }
 
+    const slug = post.slug;
     await this.repo.remove(post);
 
+    void this.revalidateFrontend(this.postRevalidatePaths(slug), [
+      `post-${slug}`,
+    ]);
+
     return { success: true, post };
+  }
+
+  /** Public paths affected by any change to a single post. */
+  private postRevalidatePaths(slug: string): string[] {
+    // Post page (clears stale draft-era 404s), blog index, and the homepage
+    // "Recent Posts" block. Category pages self-revalidate on their ISR window.
+    return [`/blog/${slug}`, '/blog', '/'];
+  }
+
+  /**
+   * Tell the Next.js frontend to flush ISR caches for the given paths/tags.
+   * Fire-and-forget: a revalidation failure (or no config) must never break the
+   * underlying content operation. No-op when REVALIDATE_SECRET is unset.
+   */
+  private async revalidateFrontend(
+    paths: string[],
+    tags: string[] = [],
+  ): Promise<void> {
+    const secret = this.configService.get<string>('REVALIDATE_SECRET');
+    if (!secret) return; // Not configured (e.g. local dev / tests) — skip.
+
+    const baseUrl =
+      this.configService.get<string>('REVALIDATE_URL') ||
+      'http://frontend:3000';
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    try {
+      const res = await fetch(`${baseUrl}/api/revalidate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-revalidate-secret': secret,
+        },
+        body: JSON.stringify({ paths, tags }),
+        signal: controller.signal,
+      });
+      if (!res.ok) {
+        console.warn(`[Revalidate] Frontend returned HTTP ${res.status}`);
+      }
+    } catch (err) {
+      console.warn(
+        '[Revalidate] Failed to notify frontend:',
+        (err as Error).message,
+      );
+    } finally {
+      clearTimeout(timeout);
+    }
   }
 
   async generateExcerpt(

@@ -14,6 +14,7 @@ import {
   getBreadcrumbSchema,
   getCollectionPageSchema,
   getPersonSchema,
+  getPostDates,
   SITE_URL,
 } from '@/app/lib/structured-data';
 import {
@@ -108,6 +109,7 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
     const textContent = stripMarkdown(post.content || '');
     const description =
       post.excerpt || textContent.substring(0, 160) + '...';
+    const { published, modified } = getPostDates(post);
 
     return {
       title: post.title,
@@ -125,8 +127,8 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
         description,
         url: `${SITE_URL}/blog/${params.slug}`,
         type: 'article',
-        publishedTime: post.createdAt?.toString(),
-        modifiedTime: post.updatedAt?.toString(),
+        publishedTime: published,
+        modifiedTime: modified,
         images: post.mainImageUrl ? [post.mainImageUrl] : [],
         authors: [
           post.user

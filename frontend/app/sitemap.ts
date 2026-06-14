@@ -1,5 +1,6 @@
 import { MetadataRoute } from 'next';
 import { Post } from './types/blog';
+import { getPostDates } from './lib/structured-data';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 3600;
@@ -142,12 +143,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     if (postsResponse.ok) {
       const posts: Post[] = await postsResponse.json();
       console.log(`[Sitemap] Successfully fetched ${posts.length} blog posts`);
-      blogPosts = posts.map((post) => ({
-        url: `${SITE_URL}/blog/${post.slug}`,
-        lastModified: post.updatedAt || post.createdAt,
-        changeFrequency: 'weekly' as const,
-        priority: 0.8,
-      }));
+      blogPosts = posts.map((post) => {
+        const { modified } = getPostDates(post);
+        return {
+          url: `${SITE_URL}/blog/${post.slug}`,
+          lastModified: modified ? new Date(modified) : new Date(),
+          changeFrequency: 'weekly' as const,
+          priority: 0.8,
+        };
+      });
     } else {
       console.warn(`[Sitemap] Failed to fetch blog posts: HTTP ${postsResponse.status}`);
     }

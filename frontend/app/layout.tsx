@@ -1,4 +1,4 @@
-import React, { ReactNode } from 'react';
+import { ReactNode } from 'react';
 import { Metadata } from 'next';
 import Navbar from './components/Navbar';
 import './globals.css';
@@ -6,8 +6,32 @@ import { Inter } from 'next/font/google';
 import Footer from './components/Footer';
 import 'react-toastify/dist/ReactToastify.css';
 import { getWebSiteSchema, getPersonSchema, SITE_URL } from './lib/structured-data';
+import { serverFetch } from './lib/server-api';
 
 const inter = Inter({ subsets: ['latin'] });
+
+interface AboutData {
+  fullName?: string;
+  tagline?: string;
+  bio?: string;
+  profileImageUrl?: string;
+  linkedinUrl?: string;
+  githubUrl?: string;
+  twitterUrl?: string;
+  email?: string;
+  location?: string;
+}
+
+// Fetch profile data so the site-wide #person entity is fully populated
+// (image, jobTitle, sameAs). Cached + deduped with page-level fetches; never
+// throws, so a backend hiccup can't break the layout.
+async function getAbout(): Promise<AboutData | null> {
+  try {
+    return await serverFetch<AboutData>('/portfolio/about', { revalidate: 86400 });
+  } catch {
+    return null;
+  }
+}
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -53,9 +77,10 @@ interface RootLayoutProps {
   children: ReactNode;
 }
 
-const RootLayout: React.FC<RootLayoutProps> = ({ children }) => {
+const RootLayout = async ({ children }: RootLayoutProps) => {
+  const about = await getAbout();
   const websiteSchema = getWebSiteSchema();
-  const personSchema = getPersonSchema();
+  const personSchema = getPersonSchema(about || undefined);
 
   return (
     <html lang="en">

@@ -1,5 +1,6 @@
 import { Post } from '@/app/types/blog';
 import { stripMarkdown } from '@/app/lib/strip-markdown';
+import { PROFILE_LINKS } from '@/app/lib/structured-data';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 3600;
@@ -92,6 +93,8 @@ This is ${authorName}'s personal portfolio and blog. It contains technical artic
 - Sitemap: ${SITE_URL}/sitemap.xml
 ${about.linkedinUrl ? `- LinkedIn: ${about.linkedinUrl}` : ''}
 ${about.githubUrl ? `- GitHub: ${about.githubUrl}` : ''}
+- Medium: ${PROFILE_LINKS.medium}
+- AWS Community Builder: ${PROFILE_LINKS.awsCommunityBuilder}
 
 ## Blog Posts
 

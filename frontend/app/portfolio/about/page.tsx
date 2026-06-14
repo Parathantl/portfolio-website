@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { serverFetch } from '@/app/lib/server-api';
-import { getBreadcrumbSchema, getPersonSchema, SITE_URL } from '@/app/lib/structured-data';
+import { getBreadcrumbSchema, getPersonSchema, PROFILE_LINKS, SITE_URL } from '@/app/lib/structured-data';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 3600;
@@ -85,9 +85,17 @@ export default async function AboutPage() {
                   <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
                     {about?.fullName || 'Your Name'}
                   </h2>
-                  <p className="text-xl text-blue-600 dark:text-blue-400 mb-4">
+                  <p className="text-xl text-blue-600 dark:text-blue-400 mb-3">
                     {about?.tagline || 'Full Stack Developer'}
                   </p>
+                  <a
+                    href={PROFILE_LINKS.awsCommunityBuilder}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 mb-4 px-3 py-1 rounded-full bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 text-sm font-semibold hover:bg-orange-200 dark:hover:bg-orange-900/70 transition-colors"
+                  >
+                    <span aria-hidden>★</span> AWS Community Builder
+                  </a>
                   <p className="text-gray-700 dark:text-gray-300 mb-6">
                     {about?.bio || 'Welcome to my portfolio'}
                   </p>
@@ -164,6 +172,22 @@ export default async function AboutPage() {
                     Twitter
                   </a>
                 )}
+                <a
+                  href={PROFILE_LINKS.medium}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-6 py-3 bg-black hover:bg-gray-800 text-white rounded-lg font-semibold transition-colors"
+                >
+                  Medium
+                </a>
+                <a
+                  href={PROFILE_LINKS.awsCommunityBuilder}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold transition-colors"
+                >
+                  AWS Community Builder
+                </a>
               </div>
             </div>
 

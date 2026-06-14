@@ -4,6 +4,24 @@ import { stripMarkdown } from './strip-markdown';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://parathan.com';
 const PERSON_ID = `${SITE_URL}/#person`;
 
+// Stable external profiles used both for entity recognition (Person `sameAs`)
+// and surfaced on the About page. Not part of the editable `about` model since
+// they rarely change.
+export const PROFILE_LINKS = {
+  medium: 'https://medium.com/@parathan',
+  awsCommunityBuilder: 'https://builder.aws.com/community/@para?tab=badges',
+};
+
+// Subject areas Parathan demonstrably writes/builds in — asserted explicitly
+// rather than derived from the tagline (which yields job titles, not topics).
+export const KNOWS_ABOUT = [
+  'Full Stack Web Development',
+  'Node.js',
+  'React',
+  'React Native',
+  'Amazon Web Services',
+];
+
 export function getPersonSchema(about?: {
   fullName?: string;
   tagline?: string;
@@ -19,6 +37,10 @@ export function getPersonSchema(about?: {
   if (about?.githubUrl) sameAs.push(about.githubUrl);
   if (about?.linkedinUrl) sameAs.push(about.linkedinUrl);
   if (about?.twitterUrl) sameAs.push(about.twitterUrl);
+  // Always assert the stable external profiles, even when `about` is absent
+  // (e.g. the homepage), so the canonical #person entity is consistent.
+  sameAs.push(PROFILE_LINKS.medium, PROFILE_LINKS.awsCommunityBuilder);
+  const uniqueSameAs = Array.from(new Set(sameAs));
 
   return {
     '@context': 'https://schema.org',
@@ -33,10 +55,8 @@ export function getPersonSchema(about?: {
     address: about?.location
       ? { '@type': 'PostalAddress', addressLocality: about.location }
       : undefined,
-    sameAs: sameAs.length > 0 ? sameAs : undefined,
-    knowsAbout: about?.tagline
-      ? about.tagline.split(/[,&]/).map((s: string) => s.trim()).filter(Boolean)
-      : undefined,
+    sameAs: uniqueSameAs,
+    knowsAbout: KNOWS_ABOUT,
   };
 }
 
@@ -59,6 +79,24 @@ export function getWebSiteSchema() {
       'query-input': 'required name=search_term_string',
     },
   };
+}
+
+/**
+ * The posts API serializes its TypeORM columns as `createdOn`/`modifiedOn`
+ * (see backend post.entity.ts), but the Post type and older callers reference
+ * `createdAt`/`updatedAt` — which are absent on the real payload. Reading the
+ * wrong key silently dropped datePublished/dateModified from schema, the
+ * sitemap, and OpenGraph. Normalize both spellings in one place.
+ */
+export function getPostDates(post: {
+  createdAt?: string;
+  updatedAt?: string;
+  createdOn?: string;
+  modifiedOn?: string;
+}): { published?: string; modified?: string } {
+  const published = post.createdAt ?? post.createdOn;
+  const modified = post.updatedAt ?? post.modifiedOn ?? published;
+  return { published, modified };
 }
 
 export function getBreadcrumbSchema(
@@ -107,6 +145,7 @@ export function getBlogPostingSchema(
   const authorName = post.user
     ? `${post.user.firstname} ${post.user.lastname}`
     : 'Parathan Thiyagalingam';
+  const { published, modified } = getPostDates(post);
 
   return {
     '@context': 'https://schema.org',
@@ -116,8 +155,8 @@ export function getBlogPostingSchema(
     abstract: options?.abstract || description,
     articleBody: options?.articleBody || textContent,
     image: post.mainImageUrl ? [post.mainImageUrl] : undefined,
-    datePublished: post.createdAt,
-    dateModified: post.updatedAt || post.createdAt,
+    datePublished: published,
+    dateModified: modified,
     author: { '@type': 'Person', '@id': PERSON_ID, name: authorName },
     publisher: {
       '@type': 'Person',
