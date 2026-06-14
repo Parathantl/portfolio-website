@@ -95,6 +95,7 @@ ${about.linkedinUrl ? `- LinkedIn: ${about.linkedinUrl}` : ''}
 ${about.githubUrl ? `- GitHub: ${about.githubUrl}` : ''}
 - Medium: ${PROFILE_LINKS.medium}
 - AWS Community Builder: ${PROFILE_LINKS.awsCommunityBuilder}
+- Wikidata: ${PROFILE_LINKS.wikidata}
 
 ## Blog Posts
 

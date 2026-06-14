@@ -10,6 +10,7 @@ const PERSON_ID = `${SITE_URL}/#person`;
 export const PROFILE_LINKS = {
   medium: 'https://medium.com/@parathan',
   awsCommunityBuilder: 'https://builder.aws.com/community/@para?tab=badges',
+  wikidata: 'https://www.wikidata.org/wiki/Q140201948',
 };
 
 // Subject areas Parathan demonstrably writes/builds in — asserted explicitly
@@ -46,7 +47,11 @@ export function getPersonSchema(about?: {
   if (about?.twitterUrl) sameAs.push(about.twitterUrl);
   // Always assert the stable external profiles, even when `about` is absent
   // (e.g. the homepage), so the canonical #person entity is consistent.
-  sameAs.push(PROFILE_LINKS.medium, PROFILE_LINKS.awsCommunityBuilder);
+  sameAs.push(
+    PROFILE_LINKS.medium,
+    PROFILE_LINKS.awsCommunityBuilder,
+    PROFILE_LINKS.wikidata,
+  );
   const uniqueSameAs = Array.from(new Set(sameAs));
 
   return {
